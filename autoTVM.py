@@ -1,3 +1,4 @@
+#!/opt/homebrew/opt/python@3.8/bin/python3.8
 import onnx
 import timeit
 from PIL import Image
@@ -11,9 +12,9 @@ import tvm.relay as relay
 
 from scipy.special import softmax
 
-# Load a ResNet-50 for classification.
-# Got this from https://github.com/onnx/models/blob/main/vision/classification/resnet/model/resnet50-v2-7.onnx
-model_path = "./assets/resnet50-v2-7.onnx"
+# Load a ResNet-18 for classification.
+# Got this from https://github.com/onnx/models/blob/main/vision/classification/resnet/model/resne18-v2-7.onnx
+model_path = "./assets/resnet18-v2-7.onnx"
 onnx_model = onnx.load(model_path)
 
 # Read and resize input image to 224x224.
@@ -36,7 +37,7 @@ img_data = np.expand_dims(norm_img_data, axis=0)
 input_name = "data"
 shape_dict = {input_name: img_data.shape}
 mod, params = relay.frontend.from_onnx(onnx_model, shape_dict)
-target = tvm.target.Target(target="metal", host="llvm -mcpu=apple-latest -mtriple=arm64-apple-macos")
+target = tvm.target.Target("metal", host="llvm -mcpu=apple-latest -mtriple=arm64-apple-macos")
 
 with tvm.transform.PassContext(opt_level=3):
     lib = relay.build(mod, target=target, params=params)
@@ -81,11 +82,11 @@ ranks = np.argsort(scores)[::-1]
 for rank in ranks[0:5]:
     print("class='%s' with probability=%f" % (labels[rank], scores[rank]))
 
-# Tune the ResNet-50 model with autoTVM
+# Tune the ResNet model with autoTVM
 number = 10
 repeat = 1
-min_repeat_ms = 0   # since we're tuning on a CPU, can be set to 0
-timeout       = 10  # in seconds
+min_repeat_ms = 1   
+timeout       = 100  # in seconds
 
 # create a TVM runner
 runner = autotvm.LocalRunner(
@@ -99,12 +100,12 @@ runner = autotvm.LocalRunner(
 # Tuning options for the XGBoost algorithm that guides the search.
 tuning_option = {
     "tuner": "xgb",
-    "trials": 10,
+    "trials": 1000,
     "early_stopping": 100,
     "measure_option": autotvm.measure_option(
         builder=autotvm.LocalBuilder(build_func="default"), runner=runner
     ),
-    "tuning_records": "assets/resnet-50-v2-autotuning.json",
+    "tuning_records": "logs/resnet-50-v2-autotuning.json",
 }
 
 # begin by extracting the tasks from the onnx model
