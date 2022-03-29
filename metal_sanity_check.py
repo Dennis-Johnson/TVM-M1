@@ -1,22 +1,16 @@
-#!/opt/homebrew/opt/python@3.8/bin/python3.8
 import numpy as np
-import math
-
-import os
 import tvm
 from tvm import relay, auto_scheduler
-from tvm import testing
-from tvm.contrib import utils, xcode, coreml_runtime, graph_runtime
+from tvm.contrib import  graph_runtime
 
 target = tvm.target.Target("metal", host="llvm -mcpu=apple-m1 -mtriple=arm64-apple-darwin21.3.0")
 
 def _get_model(shape, dtype, var_names):
     """Return a model and any parameters it may have."""
-    a = relay.var(next(var_names), shape=shape, dtype=dtype)
+    a   = relay.var(next(var_names), shape=shape, dtype=dtype)
     out = relay.op.reduce.mean(a, 0)
     params = {}
     return out, params
-
 
 def converter(shape):
     print("Shape: {}".format(shape))
