@@ -11,7 +11,7 @@ from tvm.contrib import graph_executor
 # ----------------
 network    = "resnet-18"
 batch_size = 1
-layout     = "NCHW"
+layout     = "NHWC"
 dtype      = "float32"
 shape_dict = {"data": (batch_size, 3, 224, 224)}
 
