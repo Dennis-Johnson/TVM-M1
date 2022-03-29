@@ -13,26 +13,10 @@ network    = "resnet-18"
 batch_size = 1
 layout     = "NHWC"
 dtype      = "float32"
-shape_dict = {"data": (batch_size, 3, 224, 224)}
+shape_dict = {"data": (batch_size, 224, 224, 3)}
 
 target     =  tvm.target.Target("metal", host="llvm -mcpu=apple-m1 -mtriple=arm64-apple-darwin21.3.0")
 log_file   = "./logs/%s-%s-B%d-%s.json" % (network, layout, batch_size, target.kind.name)
-
-# Read and resize input image to 224x224.
-img_path = "./assets/kitten.jpeg"
-resized_image = Image.open(img_path).resize((224, 224))
-img_data = np.asarray(resized_image).astype("float32")
-
-# Input image is in HWC layout while ONNX expects CHW input.
-img_data = np.transpose(img_data, (2, 0, 1))
-
-# Normalize according to the ImageNet input specification.
-imagenet_mean   = np.array([0.485, 0.456, 0.406]).reshape((3, 1, 1))
-imagenet_stddev = np.array([0.229, 0.224, 0.225]).reshape((3, 1, 1))
-norm_img_data   = (img_data / 255 - imagenet_mean) / imagenet_stddev
-
-# Add the batch dimension, since we expect NCHW.
-img_data = np.expand_dims(norm_img_data, axis=0)
 
 #################################################################
 # Extract Search Tasks from the Network
@@ -76,7 +60,8 @@ with auto_scheduler.ApplyHistoryBest(log_file):
 dev    = tvm.device(str(target), 0)
 module = graph_executor.GraphModule(lib["default"](dev))
 
-module.set_input("data", img_data)
+input_data = tvm.nd.array((np.random.uniform(size=input_shape)).astype(dtype))
+module.set_input("data", input_data)
 module.run()
 tvm_output = module.get_output(0, tvm.nd.empty(output_shape)).numpy()
 
