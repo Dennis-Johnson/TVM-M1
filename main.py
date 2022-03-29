@@ -1,9 +1,8 @@
 import tvm
 import numpy as np
 import tvm.relay.testing
-from PIL import Image
 from tvm import relay, auto_scheduler
-from utils import softmax, get_network
+from utils import get_network
 from tvm.contrib import graph_executor
 
 #################################################################
@@ -46,7 +45,7 @@ def run_tuning():
 
     tuner.tune(tune_option)
 
-# run_tuning()
+run_tuning()
 
 ######################################################################
 # Compile and Evaluate
