@@ -1,17 +1,15 @@
 import tvm
-import onnx
 import numpy as np
 import tvm.relay.testing
 from PIL import Image
 from tvm import relay, auto_scheduler
-from utils import softmax
+from utils import softmax, get_network
 from tvm.contrib import graph_executor
 
 #################################################################
 # Define a Network and Compilation Target
 # ----------------
-network    = "resnet"
-onnx_model = onnx.load("./assets/resnet18-v2-7.onnx")
+network    = "resnet-18"
 batch_size = 1
 layout     = "NCHW"
 dtype      = "float32"
@@ -40,7 +38,7 @@ img_data = np.expand_dims(norm_img_data, axis=0)
 # Extract Search Tasks from the Network
 # --------------------
 print("Extract tasks...")
-mod, params = relay.frontend.from_onnx(onnx_model, shape_dict)
+mod, params, input_shape, output_shape = get_network(network, batch_size, layout, dtype=dtype)
 tasks, task_weights = auto_scheduler.extract_tasks(mod["main"], params, target)
 
 for idx, task in enumerate(tasks):
@@ -80,21 +78,8 @@ module = graph_executor.GraphModule(lib["default"](dev))
 
 module.set_input("data", img_data)
 module.run()
-
-output_shape = (1, 1000)
 tvm_output = module.get_output(0, tvm.nd.empty(output_shape)).numpy()
 
-# Results!
-labels_path = "./assets/synset.txt"
-with open(labels_path, "r") as f:
-    labels = [l.rstrip() for l in f]
-
-scores = softmax(tvm_output)
-scores = np.squeeze(scores)
-ranks  = np.argsort(scores)[::-1]
-for rank in ranks[0:5]:
-    print("class='%s' with probability=%f" % (labels[rank], scores[rank]))
-
-# Evaluate
+# Benchmark inference performance
 print("Benchmarking inference time ...")
 print(module.benchmark(dev, repeat=10, min_repeat_ms=500))

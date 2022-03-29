@@ -1,6 +1,0 @@
-{'mean': 1.23240177999, 'median': 1.2433181166500007, 'std': 0.033638237434509534}
-class='n02123045 tabby, tabby cat' with probability=0.621105
-class='n02123159 tiger cat' with probability=0.356377
-class='n02124075 Egyptian cat' with probability=0.019712
-class='n02129604 tiger, Panthera tigris' with probability=0.001215
-class='n04040759 radiator' with probability=0.000262
